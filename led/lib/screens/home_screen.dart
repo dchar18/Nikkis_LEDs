@@ -5,6 +5,7 @@ import "package:flutter/material.dart";
 import 'package:led/widgets/mode_list.dart';
 import 'package:led/widgets/preset_colors.dart';
 import 'package:led/widgets/slider_text.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -21,6 +22,28 @@ class _HomeScreenState extends State<HomeScreen> {
   // Color green = Color(0xff81c784);
   // Color blue = Color(0xff64b5f6);
   Color blue = Color(0xff4fc3f7);
+
+  List<Color> presets = [
+    Color(0x9ffb0022), // pink (155,0,34)
+    Color(0xfffc0a00), // blood red (252,10,0)
+    Color(0xffff0000),
+    Color(0xffff0022), // hot pink (255,0,34)
+    Color(0xffff2b00), // orange (255,43,0)
+    Color(0xffff2b0a), // peach (255,43,10)
+    Color(0xff50ff41), // mint green (80,255,65)
+    Color(0xff00ff00),
+    Color(0xff00ffff), // aqua blue (0,255,255)
+    Color(0xff0fd0ff), // light blue (15,208,255)
+    Color(0xff0000ff),
+    Color(0xff1560ff), // metal blue (21,96,255)
+    Color(0xffff00ff), // purple (255,0,255)
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRGB();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,21 +62,8 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         child: Column(
           children: [
-            SizedBox(height: 30),
-            Container(
-              height: 75,
-              width: MediaQuery.of(context).size.width,
-              padding:
-                  EdgeInsets.only(top: 10, bottom: 10, left: 15, right: 10),
-              child: Text(
-                "LED Control",
-                style: TextStyle(
-                    fontSize: 35,
-                    fontWeight: FontWeight.normal,
-                    fontFamily: 'Roboto'),
-              ),
-              alignment: Alignment.centerLeft,
-            ),
+            // SizedBox(height: 30),
+            SizedBox(height: 45),
             sliderText("Red", _redValue, red),
             Slider(
               value: _redValue,
@@ -101,7 +111,42 @@ class _HomeScreenState extends State<HomeScreen> {
               activeColor: blue,
               inactiveColor: Colors.blue[300],
             ),
-            presetColors(context),
+            Container(
+              height: 60,
+              width: MediaQuery.of(context).size.width,
+              padding: EdgeInsets.all(10),
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                shrinkWrap: true,
+                itemCount: presets.length,
+                itemBuilder: (BuildContext context, int index) {
+                  final Color color = presets[index];
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _redValue = color.red.toDouble();
+                        _greenValue = color.green.toDouble();
+                        _blueValue = color.blue.toDouble();
+                        updateRGB();
+                      });
+                    },
+                    child: Container(
+                      padding: EdgeInsets.all(10),
+                      margin: EdgeInsets.only(left: 5, right: 5),
+                      height: 40,
+                      width: 40,
+                      decoration: BoxDecoration(
+                          color: color,
+                          borderRadius: BorderRadius.all(Radius.circular(20)),
+                          border: Border.all(
+                              width: 4,
+                              color: Colors.white,
+                              style: BorderStyle.solid)),
+                    ),
+                  );
+                },
+              ),
+            ),
             Expanded(
               child: modeList(),
             ),
@@ -109,6 +154,25 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  _loadRGB() async {
+    SharedPreferences pref = await SharedPreferences.getInstance();
+    setState(() {
+      _redValue = pref.get('red') ?? 0.0;
+      _greenValue = pref.get('green') ?? 0.0;
+      _blueValue = pref.get('blue') ?? 0.0;
+    });
+  }
+
+  updateRGB() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      prefs.setDouble('red', _redValue);
+      prefs.setDouble('green', _greenValue);
+      prefs.setDouble('blue', _blueValue);
+    });
+    sendRGB();
   }
 
   // this function sends solid rgb values to a specific board/all boards
@@ -130,24 +194,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
 // this function is used to send a mode (not solid rgb) to a specific board or to all
 void sendRequest(String mode) async {
-  // print("Received " + device + ", entering mode: " + mode);
-  // String url;
-  // if (mode.contains("twinkle")) {
-  //   mode = mode.replaceAll(" twinkle", "");
-  //   print("current mode: " + mode);
-  //   mode = "twinkle_" + mode;
-  // }
-  // if (device == "All") {
-  //   url = "http://192.168.50.114:8181/" + mode.toLowerCase() + "/sync";
-  // } else {
-  //   url = "http://192.168.50.114:8181/esp8266_" +
-  //       device.toLowerCase() +
-  //       "/" +
-  //       mode.toLowerCase();
-  // }
+  print("Entering mode: " + mode);
+  String url;
+  mode = mode.toLowerCase();
+  if (mode.contains("twinkle")) {
+    mode = mode.replaceAll(" twinkle", "");
+    print("current mode: " + mode);
+    mode = "twinkle_" + mode;
+  } else if (mode.contains(" ")) {
+    mode = mode.replaceAll(" ", "_");
+  }
 
-  // print("Using url: " + url);
-  // final response = await get(url);
-  // // print(response.body);
-  // print("Response: " + response.statusCode.toString());
+  url = "http://192.168.50.70/" + mode.toLowerCase();
+
+  print("Using url: " + url);
+  final response = await get(url);
+  // print(response.body);
+  print("Response: " + response.statusCode.toString());
 }

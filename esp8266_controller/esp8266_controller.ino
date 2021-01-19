@@ -59,6 +59,23 @@ CRGB gBackgroundColor = CRGB::Black;
 #define COOL_LIKE_INCANDESCENT 1
 
 CRGBPalette16 targetPalette;
+
+// used for "fire" modes ----------------------------
+bool gReverseDirection = false;
+CRGBPalette16 gPal;
+
+// COOLING: How much does the air cool as it rises?
+// Less cooling = taller flames.  More cooling = shorter flames.
+// Default 55, suggested range 20-100 
+#define COOLING  85
+
+// SPARKING: What chance (out of 255) is there that a new spark will be lit?
+// Higher chance = more roaring fire.  Lower chance = more flickery fire.
+// Default 120, suggested range 50-200.
+#define SPARKING 120
+
+
+
 // --------------------------------------------------
 
 // network credentials
@@ -183,15 +200,24 @@ void loop() {
     }
     setRGB();
   }
-//  else if(led_mode == "study"){
-//    if(prev_mode == "off"){
-//      startIndex = 0;
-//      prev_mode = "study";
-//    }
-//    UPDATES_PER_SECOND = 200;
-//    currentPalette = StudyColors_p;
-//    use_palette(startIndex);
-//  }
+  else if(led_mode == "study"){
+    if(prev_mode == "off"){
+      startIndex = 0;
+      prev_mode = "study";
+    }
+    UPDATES_PER_SECOND = 200;
+    currentPalette = StudyColors_p;
+    use_palette(startIndex);
+  }
+  else if(led_mode == "relax"){
+    if(prev_mode == "off"){
+      startIndex = 0;
+      prev_mode = "relax";
+    }
+    UPDATES_PER_SECOND = 800;
+    currentPalette = RelaxColors_p;
+    use_palette(startIndex);
+  }
   else if(led_mode == "party"){
     if(prev_mode == "off"){
       startIndex = 0;
@@ -228,15 +254,33 @@ void loop() {
     currentPalette = Holly_p;
     twinkle();
   }
-//  else if(led_mode == "snow"){
-//    if(prev_mode == "off"){
-//      startIndex = 0;
-//      prev_mode = "snow";
-//    }
-//    UPDATES_PER_SECOND = 400;
-//    currentPalette = Snow_p;
-//    twinkle();
-//  }
+  else if(led_mode == "snow"){
+    if(prev_mode == "off"){
+      startIndex = 0;
+      prev_mode = "snow";
+    }
+    UPDATES_PER_SECOND = 400;
+    currentPalette = Snow_p;
+    twinkle();
+  }
+  else if(led_mode == "fire"){
+    if(prev_mode == "off"){
+      startIndex = 0;
+      prev_mode = "fire";
+    }
+    UPDATES_PER_SECOND = 60;
+    gPal = HeatColors_p;
+    firePalette();
+  }
+  else if(led_mode == "blue_fire"){
+    if(prev_mode == "off"){
+      startIndex = 0;
+      prev_mode = "blue_fire";
+    }
+    UPDATES_PER_SECOND = 60;
+    gPal = BlueFireColors_p;
+    firePalette();
+  }
   FastLED.show();
   FastLED.delay(1000 / UPDATES_PER_SECOND);
   
@@ -411,4 +455,40 @@ void coolLikeIncandescent( CRGB& c, uint8_t phase)
   uint8_t cooling = (phase - 128) >> 4;
   c.g = qsub8( c.g, cooling);
   c.b = qsub8( c.b, cooling * 2);
+}
+
+void firePalette(){
+  // Array of temperature readings at each simulation cell
+  static byte heat[NUM_LEDS];
+
+  // Step 1.  Cool down every cell a little
+  for( int i = 0; i < NUM_LEDS; i++) {
+    heat[i] = qsub8( heat[i],  random8(0, ((COOLING * 10) / NUM_LEDS) + 2));
+  }
+
+  // Step 2.  Heat from each cell drifts 'up' and diffuses a little
+  for( int k= NUM_LEDS - 1; k >= 2; k--) {
+    heat[k] = (heat[k - 1] + heat[k - 2] + heat[k - 2] ) / 3;
+  }
+  
+  // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
+  if( random8() < SPARKING ) {
+    int y = random8(7);
+    heat[y] = qadd8( heat[y], random8(160,255) );
+  }
+
+  // Step 4.  Map from heat cells to LED colors
+  for( int j = 0; j < NUM_LEDS; j++) {
+    // Scale the heat value from 0-255 down to 0-240
+    // for best results with color palettes.
+    byte colorindex = scale8( heat[j], 240);
+    CRGB color = ColorFromPalette( gPal, colorindex);
+    int pixelnumber;
+    if( gReverseDirection ) {
+      pixelnumber = (NUM_LEDS-1) - j;
+    } else {
+      pixelnumber = j;
+    }
+    leds[pixelnumber] = color;
+  }
 }

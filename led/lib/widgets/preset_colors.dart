@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:led/screens/home_screen.dart';
 
 List<Color> presets = [
   Color(0x9ffb0022), // pink (155,0,34)
@@ -42,16 +43,19 @@ class ColorTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.all(10),
-      margin: EdgeInsets.only(left: 5, right: 5),
-      height: 40,
-      width: 40,
-      decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.all(Radius.circular(20)),
-          border: Border.all(
-              width: 4, color: Colors.white, style: BorderStyle.solid)),
+    return GestureDetector(
+      onTap: () {},
+      child: Container(
+        padding: EdgeInsets.all(10),
+        margin: EdgeInsets.only(left: 5, right: 5),
+        height: 40,
+        width: 40,
+        decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.all(Radius.circular(20)),
+            border: Border.all(
+                width: 4, color: Colors.white, style: BorderStyle.solid)),
+      ),
     );
   }
 }

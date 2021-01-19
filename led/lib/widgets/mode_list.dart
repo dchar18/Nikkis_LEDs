@@ -4,17 +4,20 @@ import 'package:led/screens/home_screen.dart';
 List<String> modes = [
   "Off",
   "Study",
+  "Relax",
   "Party",
   "Christmas twinkle",
   "Blue twinkle",
   "Green twinkle",
-  "Snow"
+  "Snow",
+  "Fire",
+  "Blue Fire"
 ];
 
 Widget modeList() {
   return ListView.builder(
     shrinkWrap: true,
-    padding: EdgeInsets.only(top: 15.0),
+    padding: EdgeInsets.only(bottom: 10.0),
     itemCount: modes.length,
     itemBuilder: (BuildContext context, int index) {
       final String mode = modes[index];
@@ -31,7 +34,8 @@ class ModeTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final itemHeight = (MediaQuery.of(context).size.height - 150) / 10;
+    // final itemHeight = (MediaQuery.of(context).size.height - 150) / 10;
+    final itemHeight = 60.0;
 
     return GestureDetector(
       onTap: () {
